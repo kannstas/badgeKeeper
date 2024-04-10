@@ -19,16 +19,10 @@ public class GetAllEmployeesServlet extends HttpServlet {
     private EmployeeServiceImpl employeeService;
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 
         List<GetEmployeeResponse> employees = employeeService.getAll();
         GetAllEmployeesResponse allEmployeesResponse = new GetAllEmployeesResponse(employees);
-
-        try {
-            resp.getWriter().write(JsonUtils.toJson(allEmployeesResponse));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
+        resp.getWriter().write(JsonUtils.toJson(allEmployeesResponse));
     }
 }

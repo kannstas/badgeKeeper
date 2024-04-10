@@ -2,7 +2,6 @@ package servlet.employee;
 
 import api.response.employee.GetEmployeeResponse;
 import jakarta.inject.Inject;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
