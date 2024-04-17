@@ -1,42 +1,34 @@
 package dao;
 
-import jakarta.inject.Inject;
+import api.common.Position;
 import model.Employee;
-import util.DAOUtil;
+import util.dao.DAOUtils;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-
 public class EmployeeDAO extends AbstractDao<Employee, UUID> {
 
-    @Inject
-    private DAOUtil daoUtil;
+    private final String SELECT_EMPLOYEE =
+            """
+                    SELECT
+                      id,
+                      position,
+                      department,
+                      created_at,
+                      updated_at
+                    FROM employees
+                    """;
 
-    private final String SELECT_EMPLOYEE = """
-            SELECT id, position, department, created_at, updated_at
-            FROM employees
-            """;
-
-    private final String INSERT_EMPLOYEE = """
-            INSERT INTO employees (id, position, department, created_at, updated_at) VALUES (?,?,?,?,?)
-            """;
-
-    private final String UPDATE_EMPLOYEE = """
-            UPDATE employees SET position=?, department=?, updated_at=?
-            """;
-
-    private final String DELETE_EMPLOYEE = """
-            DELETE FROM employees
-            """;
 
     public Optional<Employee> get(UUID id) {
         String sql = "%s WHERE id='%s'".formatted(SELECT_EMPLOYEE, id);
 
-        return daoUtil.extractSingleResultOrNull(
+        return DAOUtils.extractSingleResultOrNull(
                 fetch(sql)
         );
     }
@@ -47,38 +39,66 @@ public class EmployeeDAO extends AbstractDao<Employee, UUID> {
 
     public void save(Employee employee) {
         executeUpdate(
-                INSERT_EMPLOYEE,
-                employee.id(),
-                employee.position(),
-                employee.department(),
-                employee.createdAt(),
-                employee.updatedAt()
+                """
+                        INSERT INTO employees (
+                          id,
+                          position,
+                          department,
+                          created_at,
+                          updated_at
+                        ) VALUES (?,?,?,?,?)
+                        """,
+                Map.of(
+                        1, employee.id(),
+                        2, employee.position().name(),
+                        3, employee.department(),
+                        4, DAOUtils.toTimestamp(employee.createdAt()),
+                        5, DAOUtils.toTimestamp(employee.updatedAt())
+                )
         );
+
     }
 
     public void update(UUID id, Employee employee) {
-        String sql = "%s WHERE id='%s'".formatted(UPDATE_EMPLOYEE, id);
+
         executeUpdate(
-                sql,
-                employee.position(),
-                employee.department(),
-                employee.updatedAt()
+                """
+                        UPDATE employees
+                        SET
+                          position=?,
+                          department=?,
+                          updated_at=?
+                        WHERE
+                          id='%s';
+                        """
+                        .formatted(id),
+                Map.of(
+                        1, employee.position().name(),
+                        2, employee.department(),
+                        3, DAOUtils.toTimestamp(employee.updatedAt())
+                )
         );
     }
 
+
     public void delete(UUID id) {
-        String sql = "%s WHERE id='%s'".formatted(DELETE_EMPLOYEE,id);
-        executeUpdate(sql);
+        executeUpdate(
+                """
+                        DELETE FROM employees
+                        WHERE id='%s';
+                        """
+                        .formatted(id)
+        );
     }
 
     @Override
     Employee resultSetToModel(ResultSet resultSet) throws SQLException {
         return new Employee(
                 (UUID) resultSet.getObject("id"),
-                resultSet.getString("position"),
+                Enum.valueOf(Position.class, resultSet.getString("position")),
                 resultSet.getString("department"),
-                resultSet.getTimestamp("created_at"),
-                resultSet.getTimestamp("updated_at")
+                resultSet.getTimestamp("created_at").toInstant(),
+                resultSet.getTimestamp("updated_at").toInstant()
         );
     }
 

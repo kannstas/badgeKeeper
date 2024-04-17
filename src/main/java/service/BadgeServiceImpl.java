@@ -1,15 +1,18 @@
 package service;
 
+import api.common.Position;
 import api.request.badge.CreateBadgeRequest;
 import api.response.badge.GetBadgeResponse;
 import api.response.employee.GetEmployeeResponse;
 import dao.BadgeDAO;
 import jakarta.inject.Inject;
-import util.BusinessLogicException;
 import util.convert.ConvertBadge;
+import util.exception.BusinessLogicException;
+import util.exception.IdNotFoundException;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import static java.util.Objects.requireNonNull;
 
@@ -19,51 +22,49 @@ public class BadgeServiceImpl {
     @Inject
     private EmployeeServiceImpl employeeService;
 
+    Logger logger = Logger.getLogger(BadgeServiceImpl.class.getName());
+
 
     public GetBadgeResponse getById(UUID id) {
         requireNonNull(id);
+        logger.info("get by id: start: id = %s".formatted(id));
 
         return badgeDAO.get(id)
-                .map(ConvertBadge::badgeToBadgeResponse)
-                .orElseThrow(() -> new BusinessLogicException("В базе данных нет бейджика с id = %s ".formatted(id)));
+                .map(ConvertBadge::toBadge)
+                .orElseThrow(() -> new IdNotFoundException("badge", id));
     }
 
 
     public List<GetBadgeResponse> getAll() {
+        logger.info("get all: start");
+
         return badgeDAO.getAll().stream()
-                .map(ConvertBadge::badgeToBadgeResponse)
+                .map(ConvertBadge::toBadge)
                 .toList();
     }
 
     public void save(CreateBadgeRequest badgeRequest) {
         requireNonNull(badgeRequest);
+        logger.info("save badge: start: request = %s".formatted(badgeRequest));
 
-        GetEmployeeResponse recipientEmployeeResponse = employeeService.get(badgeRequest.recipientEmployeeId());
+        employeeService.getById(badgeRequest.recipientEmployeeId());
 
-        if (recipientEmployeeResponse == null) {
-            throw new BusinessLogicException("В базе данных нет работника с таким id");
+        GetEmployeeResponse issueEmployeeResponse = employeeService.getById(badgeRequest.issuerEmployeeId());
+
+        if (issueEmployeeResponse.position() == Position.SECURITY_OFFICER) {
+            badgeDAO.save(ConvertBadge.toBadge(badgeRequest));
+        } else {
+            throw new BusinessLogicException("Сотрудник с данным id = %s не может выдавать бейджики"
+                    .formatted(issueEmployeeResponse.id()));
         }
-
-        GetEmployeeResponse issueEmployeeResponse = employeeService.get(badgeRequest.issuerEmployeeId());
-
-        if (issueEmployeeResponse.position().equals("Security officer")) {
-            badgeDAO.save(ConvertBadge.badgeRequestToBadge(badgeRequest));
-        } else throw new BusinessLogicException("Сотрудник с данным id = %s не может выдавать бейджики"
-                .formatted(issueEmployeeResponse.id()));
 
     }
 
     public void disable(UUID id) {
         requireNonNull(id);
+        logger.info("disable badge: start: id = %s".formatted(id));
 
         badgeDAO.disable(id);
     }
-
-    public void delete(UUID id) {
-        requireNonNull(id);
-
-        badgeDAO.delete(id);
-    }
-
 
 }

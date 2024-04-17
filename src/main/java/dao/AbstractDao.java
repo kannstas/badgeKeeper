@@ -1,7 +1,6 @@
 package dao;
 
-import jakarta.inject.Inject;
-import util.DBConnector;
+import util.connection.DBConnector;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -9,15 +8,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
 abstract class AbstractDao<MODEL, KEY> {
 
     protected List<MODEL> fetch(String sql) {
         final List<MODEL> results = new ArrayList<>();
 
-        try (Connection connection = DBConnector.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql);
+
+        try (PreparedStatement preparedStatement = DBConnector.getConnection().prepareStatement(sql);
              ResultSet resultSet = preparedStatement.executeQuery()
         ) {
             while (resultSet.next()) {
@@ -29,24 +28,32 @@ abstract class AbstractDao<MODEL, KEY> {
         return results;
     }
 
-    protected void executeUpdate(String sql, Object... params) {
-        try (Connection connection = DBConnector.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(sql)
-        ) {
+    protected void executeUpdate(String sql, Map<Integer, Object> params) {
+        Connection connection;
+        try {
+            connection = DBConnector.getConnection();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
 
-            for (int i = 0; i < params.length; i++) {
-                preparedStatement.setObject(i + 1, params[i]);
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            for (Integer paramKey : params.keySet()) {
+                preparedStatement.setObject(paramKey, params.get(paramKey));
             }
-
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    protected boolean checkContains(String sql, Object...params) {
-      //проверка, что вернулось из
-        return true;
+    protected void executeUpdate(String sql) {
+        try (PreparedStatement preparedStatement = DBConnector.getConnection().prepareStatement(sql)) {
+
+            preparedStatement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     abstract MODEL resultSetToModel(ResultSet resultSet) throws SQLException;
