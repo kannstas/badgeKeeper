@@ -8,9 +8,10 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.BadgeServiceImpl;
+
 import java.io.IOException;
 
-@WebServlet("/badge/issue")
+@WebServlet("/badges/issue")
 public class IssueBadgeServlet extends HttpServlet {
     private final ObjectMapper objectMapper = new ObjectMapper();
     @Inject

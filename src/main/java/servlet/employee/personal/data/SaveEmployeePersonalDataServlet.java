@@ -1,6 +1,6 @@
-package servlet.employeePersonalData;
+package servlet.employee.personal.data;
 
-import api.request.employeePersonalData.CreateEmployeePersonalDataRequest;
+import api.request.employee.personal.data.CreateEmployeePersonalDataRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import jakarta.servlet.annotation.WebServlet;
@@ -8,9 +8,10 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.EmployeePersonalDataServiceImpl;
+
 import java.io.IOException;
 
-@WebServlet("employeePersonalData/save")
+@WebServlet("/employeesPersonalData/save")
 public class SaveEmployeePersonalDataServlet extends HttpServlet {
     private final ObjectMapper objectMapper = new ObjectMapper();
     @Inject

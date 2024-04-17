@@ -8,8 +8,10 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.EmployeeServiceImpl;
+
 import java.io.IOException;
-import java.util.UUID;
+
+import static util.servlet.ServletUtils.extractIdOrThrow;
 
 @WebServlet("/employees/update")
 public class UpdateEmployeeServlet extends HttpServlet {
@@ -20,9 +22,7 @@ public class UpdateEmployeeServlet extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-
-        UUID id = UUID.fromString(req.getParameter("id"));
         UpdateEmployeeRequest employee = objectMapper.readValue(req.getInputStream(), UpdateEmployeeRequest.class);
-        employeeService.update(id, employee);
+        employeeService.update(extractIdOrThrow(req, "id"), employee);
     }
 }
