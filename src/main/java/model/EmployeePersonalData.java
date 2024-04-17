@@ -7,7 +7,7 @@ public record EmployeePersonalData (UUID id,
                                     String firstName,
                                     String lastName,
                                     String middleName,
-                                    int age,
+                                    Integer age,
                                     String address,
                                     String phoneNumber,
                                     String email) {

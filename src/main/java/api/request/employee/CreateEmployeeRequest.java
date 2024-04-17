@@ -1,5 +1,7 @@
 package api.request.employee;
 
-public record CreateEmployeeRequest(String position,
+import api.common.Position;
+
+public record CreateEmployeeRequest(Position position,
                                     String department) {
 }

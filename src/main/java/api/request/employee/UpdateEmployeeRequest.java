@@ -1,9 +1,7 @@
 package api.request.employee;
 
-import java.sql.Timestamp;
+import api.common.Position;
 
-public record UpdateEmployeeRequest(String position,
-                                    String department,
-                                    Timestamp createdAt,
-                                    Timestamp updatedAt){
+public record UpdateEmployeeRequest(Position position,
+                                    String department){
 }

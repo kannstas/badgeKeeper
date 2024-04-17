@@ -4,11 +4,12 @@ import api.request.employee.CreateEmployeeRequest;
 import api.request.employee.UpdateEmployeeRequest;
 import api.response.employee.GetEmployeeResponse;
 import model.Employee;
-import java.sql.Timestamp;
+
+import java.time.Instant;
 import java.util.UUID;
 
 public class ConvertEmployee {
-    public static GetEmployeeResponse employeeToEmployeeResponse(Employee employee) {
+    public static GetEmployeeResponse toEmployee(Employee employee) {
         return new GetEmployeeResponse(
                 employee.id(),
                 employee.position(),
@@ -18,23 +19,26 @@ public class ConvertEmployee {
         );
     }
 
-    public static Employee employeeRequestToEmployee(CreateEmployeeRequest employeeRequest) {
+    public static Employee toEmployee(CreateEmployeeRequest employeeRequest) {
         return new Employee(
                 UUID.randomUUID(),
                 employeeRequest.position(),
                 employeeRequest.department(),
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis())
+                Instant.now(),
+                Instant.now()
 
         );
     }
-    public static Employee updateEmployeeRequestToEmployee(UUID id, UpdateEmployeeRequest employeeRequest) {
+
+    public static Employee toEmployee(UUID id,
+                                      GetEmployeeResponse employeeResponse,
+                                      UpdateEmployeeRequest employeeRequest) {
         return new Employee(
                 id,
                 employeeRequest.position(),
                 employeeRequest.department(),
-                employeeRequest.createdAt(),
-                new Timestamp(System.currentTimeMillis())
+                employeeResponse.createdAt(),
+                Instant.now()
         );
     }
 }

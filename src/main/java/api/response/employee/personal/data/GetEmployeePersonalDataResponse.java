@@ -1,4 +1,4 @@
-package api.response.employeePersonalData;
+package api.response.employee.personal.data;
 
 import java.util.UUID;
 
@@ -7,7 +7,7 @@ public record GetEmployeePersonalDataResponse(UUID id,
                                               String firstName,
                                               String lastName,
                                               String middleName,
-                                              int age,
+                                              Integer age,
                                               String address,
                                               String phoneNumber,
                                               String email){

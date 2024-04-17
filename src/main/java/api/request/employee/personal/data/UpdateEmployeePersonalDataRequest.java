@@ -1,12 +1,14 @@
-package api.request.employeePersonalData;
+package api.request.employee.personal.data;
 
 import java.util.UUID;
 
-public record UpdateEmployeePersonalDataRequest(UUID employeeId,
+public record UpdateEmployeePersonalDataRequest(UUID id,
+                                                UUID employeeId,
+
                                                 String firstName,
                                                 String lastName,
                                                 String middleName,
-                                                int age,
+                                                Integer age,
                                                 String address,
                                                 String phoneNumber,
                                                 String email) {

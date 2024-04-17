@@ -1,4 +1,4 @@
-package api.response.employeePersonalData;
+package api.response.employee.personal.data;
 
 import java.util.List;
 

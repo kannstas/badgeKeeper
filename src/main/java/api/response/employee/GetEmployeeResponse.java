@@ -1,11 +1,13 @@
 package api.response.employee;
 
-import java.sql.Timestamp;
+import api.common.Position;
+
+import java.time.Instant;
 import java.util.UUID;
 
 public record GetEmployeeResponse(UUID id,
-                                  String position,
+                                  Position position,
                                   String department,
-                                  Timestamp createdAt,
-                                  Timestamp updatedAt){
+                                  Instant createdAt,
+                                  Instant updatedAt){
 }

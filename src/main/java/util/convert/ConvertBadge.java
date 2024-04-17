@@ -3,13 +3,14 @@ package util.convert;
 import api.request.badge.CreateBadgeRequest;
 import api.response.badge.GetBadgeResponse;
 import model.Badge;
-import java.sql.Timestamp;
-import java.util.Calendar;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 public class ConvertBadge {
 
-    public static GetBadgeResponse badgeToBadgeResponse(Badge badge) {
+    public static GetBadgeResponse toBadge(Badge badge) {
         return new GetBadgeResponse(
                 badge.id(),
                 badge.recipientEmployeeId(),
@@ -21,24 +22,15 @@ public class ConvertBadge {
         );
     }
 
-    public static Badge badgeRequestToBadge(CreateBadgeRequest badgeRequest) {
+    public static Badge toBadge(CreateBadgeRequest badgeRequest) {
         return new Badge(
                 UUID.randomUUID(),
                 badgeRequest.recipientEmployeeId(),
                 badgeRequest.issuerEmployeeId(),
                 badgeRequest.badgeSerialNumber(),
-                new Timestamp(System.currentTimeMillis()),
-                currentTimePlusYear(),
+                Instant.now(),
+                Instant.now().plus(365, ChronoUnit.DAYS),
                 true
         );
-    }
-
-   private static Timestamp currentTimePlusYear() {
-        Timestamp currentTime = new Timestamp(System.currentTimeMillis());
-        Calendar calendar = Calendar.getInstance();
-
-        calendar.setTimeInMillis(currentTime.getTime());
-        calendar.add(Calendar.YEAR, 1);
-        return new Timestamp(calendar.getTimeInMillis());
     }
 }
