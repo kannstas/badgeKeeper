@@ -1,9 +1,11 @@
 package service;
 
+import api.common.Position;
 import api.request.badge.CreateBadgeRequest;
 import api.response.badge.GetBadgeResponse;
 import api.response.employee.GetEmployeeResponse;
 import dao.BadgeDAO;
+import dao.EmployeeDAO;
 import model.Badge;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,17 +13,21 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import util.BusinessLogicException;
-import java.sql.Timestamp;
+import util.exception.BusinessLogicException;
+import util.exception.IdNotFoundException;
+
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static util.generator.badge.BadgeGenerator.generateBadge;
 
 class BadgeServiceImplUnitTest {
     @Mock
@@ -30,18 +36,25 @@ class BadgeServiceImplUnitTest {
     @Mock
     private EmployeeServiceImpl employeeService;
 
+    @Mock
+    EmployeeDAO employeeDAO;
     @InjectMocks
     private BadgeServiceImpl badgeService;
+    private Badge badge;
 
     @BeforeEach()
     public void initMockito() {
         MockitoAnnotations.openMocks(this);
     }
 
+    @BeforeEach
+    public void setup() {
+        badge = generateBadge();
+    }
+
     @Test
     void testGetBadgeByIdSuccess() {
         // given
-        Badge badge = createFakeBadge();
         when(badgeDAO.get(badge.id()))
                 .thenReturn(Optional.of(badge));
 
@@ -57,21 +70,20 @@ class BadgeServiceImplUnitTest {
 
     @Test
     void testGetBadgeByIdNotFoundShouldThrow() {
-        Badge badge = createFakeBadge();
+
         when(badgeDAO.get(badge.id()))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> badgeService.getById(badge.id()))
                 .isInstanceOf(BusinessLogicException.class)
-                .hasMessageContaining("В базе данных нет бейджика с id = %s".formatted(badge.id()))
-                .hasMessageContaining(badge.id().toString());
+                .hasMessageContaining("В базе данных нет badge с id=%s".formatted(badge.id()));
 
         verify(badgeDAO).get(badge.id());
     }
 
     @Test
     void testGetAllBadgesSuccess() {
-        Badge badge = createFakeBadge();
+
         when(badgeDAO.getAll()).thenReturn(List.of(badge));
 
         List<GetBadgeResponse> badgeresponseList = badgeService.getAll();
@@ -90,8 +102,8 @@ class BadgeServiceImplUnitTest {
     @Test
     void testSaveBadgeSuccess() {
         //given
-        GetEmployeeResponse recipientEmployeeResponse = createFakeEmployeeResponse();
-        GetEmployeeResponse issueEmployeeResponse = createFakeEmployeeResponse();
+        GetEmployeeResponse recipientEmployeeResponse = generateEmployeeResponse();
+        GetEmployeeResponse issueEmployeeResponse = generateEmployeeResponse();
 
         CreateBadgeRequest createBadgeRequest = new CreateBadgeRequest(
                 recipientEmployeeResponse.id(),
@@ -99,7 +111,7 @@ class BadgeServiceImplUnitTest {
                 "serial_number"
         );
 
-        when(employeeService.get(any()))
+        when(employeeService.getById(any()))
                 .thenReturn(issueEmployeeResponse, recipientEmployeeResponse);
 
         //when
@@ -118,27 +130,27 @@ class BadgeServiceImplUnitTest {
     @Test
     void testSaveBadgeWithNoneExistentRecipientEmployeeShouldThrow() {
 
-        CreateBadgeRequest createBadgeRequest = createFakeRequest();
+        CreateBadgeRequest createBadgeRequest = generateRequest();
 
-        when(employeeService.get(createBadgeRequest.recipientEmployeeId()))
-                .thenReturn(null);
+        when(employeeService.getById(createBadgeRequest.recipientEmployeeId()))
+                .thenThrow(new IdNotFoundException("employee", createBadgeRequest.recipientEmployeeId()));
 
         assertThatThrownBy(() -> badgeService.save(createBadgeRequest))
-                .isInstanceOf(BusinessLogicException.class)
-                .hasMessageContaining("В базе данных нет работника с таким id");
+                .isInstanceOf(IdNotFoundException.class)
+                .hasMessageContaining("В базе данных нет employee с id=%s".formatted(createBadgeRequest.recipientEmployeeId()));
     }
 
     @Test
     void testSaveBadgeWithNotValidIssueEmployeeExpectedThrow() {
 
-        CreateBadgeRequest createBadgeRequest = createFakeRequest();
+        CreateBadgeRequest createBadgeRequest = generateRequest();
 
-        when(employeeService.get(any())).thenReturn(new GetEmployeeResponse(
+        when(employeeService.getById(any())).thenReturn(new GetEmployeeResponse(
                 createBadgeRequest.issuerEmployeeId(),
-                "Manager",
+                Position.MANAGER,
                 "Sales",
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis())
+                Instant.now(),
+                Instant.now()
         ));
 
         assertThatThrownBy(() -> badgeService.save(createBadgeRequest))
@@ -149,22 +161,13 @@ class BadgeServiceImplUnitTest {
 
     @Test
     void testDisableSuccess() {
-        Badge badge = createFakeBadge();
+        Badge badge = generateBadge();
         badgeService.disable(badge.id());
 
         verify(badgeDAO).disable(badge.id());
     }
 
-    @Test
-    void testDeleteSuccess() {
-        Badge badge = createFakeBadge();
-        badgeService.delete(badge.id());
-
-        verify(badgeDAO).delete(badge.id());
-
-    }
-
-    private CreateBadgeRequest createFakeRequest() {
+    private CreateBadgeRequest generateRequest() {
         return new CreateBadgeRequest(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
@@ -172,25 +175,14 @@ class BadgeServiceImplUnitTest {
         );
     }
 
-    private Badge createFakeBadge() {
-        return new Badge(
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                "badgeSerialNumber",
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis()),
-                true
-        );
-    }
 
-    private GetEmployeeResponse createFakeEmployeeResponse() {
+    private GetEmployeeResponse generateEmployeeResponse() {
         return new GetEmployeeResponse(
                 UUID.randomUUID(),
-                "Security officer",
+                Position.SECURITY_OFFICER,
                 "Security",
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis())
+                Instant.now(),
+                Instant.now()
         );
     }
 }

@@ -1,5 +1,6 @@
 package service;
 
+import api.common.Position;
 import api.request.employee.CreateEmployeeRequest;
 import api.request.employee.UpdateEmployeeRequest;
 import api.response.employee.GetEmployeeResponse;
@@ -11,17 +12,19 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import util.BusinessLogicException;
-import java.sql.Timestamp;
+import util.exception.IdNotFoundException;
+
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static util.generator.employee.EmployeeGenerator.generateEmployee;
 
 class EmployeeServiceImplTest {
 
@@ -39,7 +42,7 @@ class EmployeeServiceImplTest {
 
     @BeforeEach()
     public void createEmployee() {
-        employee = createFakeEmployee();
+        employee = generateEmployee();
     }
 
     @Test
@@ -47,7 +50,7 @@ class EmployeeServiceImplTest {
         when(employeeDAO.get(employee.id()))
                 .thenReturn(Optional.of(employee));
 
-        GetEmployeeResponse result = employeeService.get(employee.id());
+        GetEmployeeResponse result = employeeService.getById(employee.id());
 
         verify(employeeDAO).get(employee.id());
         assertThat(result)
@@ -60,9 +63,9 @@ class EmployeeServiceImplTest {
         when(employeeDAO.get(employee.id()))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> employeeService.get(employee.id()))
-                .isInstanceOf(BusinessLogicException.class)
-                .hasMessageContaining("Работника в таким id = %s нет в базе данных".formatted(employee.id()));
+        assertThatThrownBy(() -> employeeService.getById(employee.id()))
+                .isInstanceOf(IdNotFoundException.class)
+                .hasMessageContaining("В базе данных нет employee с id=%s".formatted(employee.id()));
 
         verify(employeeDAO).get(employee.id());
     }
@@ -79,7 +82,7 @@ class EmployeeServiceImplTest {
 
         verify(employeeDAO).getAll();
 
-        assertEquals(employeeResponseList.size(), 1);
+        assertEquals(1, employeeResponseList.size());
         assertThat(resultEmployee)
                 .usingRecursiveComparison()
                 .isEqualTo(employee);
@@ -87,7 +90,10 @@ class EmployeeServiceImplTest {
 
     @Test
     void testSaveEmployeeSuccess() {
-        CreateEmployeeRequest employeeRequest = createFakeEmployeeRequest();
+        CreateEmployeeRequest employeeRequest = new CreateEmployeeRequest(
+                Position.MANAGER,
+                randomAlphanumeric(10)
+        );
 
         employeeService.save(employeeRequest);
 
@@ -106,9 +112,8 @@ class EmployeeServiceImplTest {
                 .thenReturn(Optional.of(employee));
 
         UpdateEmployeeRequest updateEmployeeRequest = new UpdateEmployeeRequest(
-                "Developer",
-                "IT",
-                new Timestamp(System.currentTimeMillis()));
+                Position.MANAGER,
+                randomAlphanumeric(10));
 
         employeeService.update(employee.id(), updateEmployeeRequest);
 
@@ -128,36 +133,19 @@ class EmployeeServiceImplTest {
                 .thenReturn(Optional.empty());
 
         UpdateEmployeeRequest updateEmployeeRequest = new UpdateEmployeeRequest(
-                "Developer",
-                "IT",
-                new Timestamp(System.currentTimeMillis()));
+                Position.MANAGER,
+                randomAlphanumeric(10));
 
         assertThatThrownBy(() -> employeeService.update(employee.id(), updateEmployeeRequest))
-                .isInstanceOf(BusinessLogicException.class)
-                .hasMessageContaining("Работника в таким id = %s нет в базе данных".formatted(employee.id()));
+                .isInstanceOf(IdNotFoundException.class)
+                .hasMessageContaining("В базе данных нет employee с id=%s".formatted(employee.id()));
     }
 
     @Test
-    void toDeleteSuccess() {
+    void testDeleteSuccess() {
         employeeService.delete(employee.id());
 
         verify(employeeDAO).delete(employee.id());
     }
 
-    private Employee createFakeEmployee() {
-        return new Employee(
-                UUID.randomUUID(),
-                "Security officer",
-                "Security",
-                new Timestamp(System.currentTimeMillis()),
-                new Timestamp(System.currentTimeMillis())
-        );
-    }
-
-    private CreateEmployeeRequest createFakeEmployeeRequest() {
-        return new CreateEmployeeRequest(
-                "Manager",
-                "Sales"
-        );
-    }
 }
