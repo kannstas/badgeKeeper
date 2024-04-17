@@ -6,7 +6,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.EmployeeServiceImpl;
-import java.util.UUID;
+
+import static util.servlet.ServletUtils.extractIdOrThrow;
 
 @WebServlet("/employees/delete")
 public class DeleteEmployeeServlet extends HttpServlet {
@@ -15,7 +16,7 @@ public class DeleteEmployeeServlet extends HttpServlet {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp)  {
-        UUID id = UUID.fromString(req.getParameter("id"));
-        employeeService.delete(id);
+
+        employeeService.delete(extractIdOrThrow(req, "id"));
     }
 }
